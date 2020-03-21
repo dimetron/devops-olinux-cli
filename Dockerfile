@@ -3,12 +3,16 @@ MAINTAINER Dmytro Rashko <drashko@me.com>
 
 ## Environment variables required for this build (do NOT change)
 ENV VERSION_OC=3.11.0
-ENV VERSION_HELM=2.13.1
+ENV VERSION_HELM2=2.13.1
+ENV VERSION_HELM3=3.1.2
 ENV SDKMAN_DIR=/root/.sdkman
 ENV TERM=xterm-color
 
-ENV BASE_URL="https://storage.googleapis.com/kubernetes-helm"
-ENV TAR_FILE="helm-v${VERSION_HELM}-linux-amd64.tar.gz"
+ENV HELM2_BASE_URL="https://storage.googleapis.com/kubernetes-helm"
+ENV HELM2_TAR_FILE="helm-v${VERSION_HELM2}-linux-amd64.tar.gz"
+
+ENV HELM3_BASE_URL="https://get.helm.sh"
+ENV HELM3_TAR_FILE="helm-v${VERSION_HELM3}-linux-amd64.tar.gz"
 
 # set environment variables
 RUN echo "LANG=en_US.utf-8" >> /etc/environment \
@@ -20,23 +24,32 @@ RUN echo "Installing dependencies" \
     dnf install https://rpmfind.net/linux/fedora/linux/releases/31/Everything/x86_64/os/Packages/s/sshpass-1.06-8.fc31.x86_64.rpm
 
 RUN echo "Installing additional software" \ 
-    && yum -y install vim-minimal which wget zip unzip tar passwd openssh openssh-server bash hostname curl ca-certificates libstdc++ ca-certificates bash git zip unzip python36 openssl bash zsh procps rsync mc openssh \
+    && yum -y install vim-minimal which wget zip unzip jq tar passwd openssh openssh-server bash hostname curl ca-certificates libstdc++ ca-certificates bash git zip unzip python36 openssl bash zsh procps rsync mc openssh \
     && yum -y clean all \
     && rm -rf /var/lib/{cache,log} /var/log/lastlog \
     && mkdir /var/log/lastlog
 
-
-
 #install ZSH custom theme
 RUN sh -c "$(wget https://raw.github.com/robbyrussell/oh-my-zsh/master/tools/install.sh -O -)"
 
-RUN curl -L "${BASE_URL}/${TAR_FILE}" | tar xvz && \
-    mv linux-amd64/helm /usr/bin/helm && \
-    chmod +x /usr/bin/helm && \
+RUN curl -sLo ./kind "https://github.com/kubernetes-sigs/kind/releases/download/v0.7.0/kind-$(uname)-amd64" \
+    && mv kind  /usr/bin \
+    && chmod +x /usr/bin/kind
+
+RUN curl -sL "${HELM2_BASE_URL}/${HELM2_TAR_FILE}" | tar xvz && \
+    mv linux-amd64/helm /usr/bin/helm2 && \
+    chmod +x /usr/bin/helm2 &&            \
     rm -rf linux-amd64
 
+RUN curl -sL "${HELM3_BASE_URL}/${HELM3_TAR_FILE}" | tar xvz && \
+    mv linux-amd64/helm /usr/bin/helm3 && \
+    chmod +x /usr/bin/helm3 &&            \
+    rm -rf linux-amd64
+
+RUN ln -s /usr/bin/helm2 /usr/bin/helm
+
 # Add oc 
-RUN curl -L "https://github.com/openshift/origin/releases/download/v3.11.0/openshift-origin-client-tools-v3.11.0-0cbc58b-linux-64bit.tar.gz" | tar xvz && \
+RUN curl -sL "https://github.com/openshift/origin/releases/download/v3.11.0/openshift-origin-client-tools-v3.11.0-0cbc58b-linux-64bit.tar.gz" | tar xvz && \
     cp openshift-origin-client-tools-v3.11.0-0cbc58b-linux-64bit/* /usr/bin/ && \
     rm -rf openshift-origin-client-tools-v3.11.0-0cbc58b-linux-64bit/
 
@@ -49,7 +62,7 @@ RUN env && bash --version && \
     echo "sdkman_insecure_ssl=true" >> $SDKMAN_DIR/etc/config
 
 #install maven and java 8
-RUN bash -c 'source "/root/.sdkman/bin/sdkman-init.sh" && sdk install maven && sdk ls java && sdk install java 8.0.232-amzn'
+RUN bash -c 'source "/root/.sdkman/bin/sdkman-init.sh" && sdk install maven && sdk ls java && sdk install java 8.0.242-amzn'
 
 #use openssh 
 RUN  sed -i s/#PermitRootLogin.*/PermitRootLogin\ yes/ /etc/ssh/sshd_config  \
