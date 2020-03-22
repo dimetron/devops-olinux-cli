@@ -18,13 +18,15 @@ ENV HELM3_TAR_FILE="helm-v${VERSION_HELM3}-linux-amd64.tar.gz"
 RUN echo "LANG=en_US.utf-8" >> /etc/environment \
  && echo "LC_ALL=en_US.utf-8" >> /etc/environment
 
-#Install OpenJDK with all  dependencies
+#Install cli tools
 RUN echo "Installing dependencies" \
-    dnf install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm \
-    dnf install https://rpmfind.net/linux/fedora/linux/releases/31/Everything/x86_64/os/Packages/s/sshpass-1.06-8.fc31.x86_64.rpm
+    && dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo \
+    && dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
 
 RUN echo "Installing additional software" \ 
-    && yum -y install vim-minimal which wget zip unzip jq tar passwd openssh openssh-server bash hostname curl ca-certificates libstdc++ ca-certificates bash git zip unzip python36 openssl bash zsh procps rsync mc openssh \
+    && yum -y --nobest install docker-ce vim-minimal which wget zip unzip jq tar passwd \
+                openssh openssh-server squid bash sshpass hostname curl ca-certificates \
+                libstdc++ ca-certificates bash git zip unzip python36 openssl bash zsh procps rsync mc openssh \
     && yum -y clean all \
     && rm -rf /var/lib/{cache,log} /var/log/lastlog \
     && mkdir /var/log/lastlog
@@ -46,7 +48,7 @@ RUN curl -sL "${HELM3_BASE_URL}/${HELM3_TAR_FILE}" | tar xvz && \
     chmod +x /usr/bin/helm3 &&            \
     rm -rf linux-amd64
 
-RUN ln -s /usr/bin/helm2 /usr/bin/helm
+RUN ln -s /usr/bin/helm3 /usr/bin/helm
 
 # Add oc 
 RUN curl -sL "https://github.com/openshift/origin/releases/download/v3.11.0/openshift-origin-client-tools-v3.11.0-0cbc58b-linux-64bit.tar.gz" | tar xvz && \
@@ -63,6 +65,17 @@ RUN env && bash --version && \
 
 #install maven and java 8
 RUN bash -c 'source "/root/.sdkman/bin/sdkman-init.sh" && sdk install maven && sdk ls java && sdk install java 8.0.242-amzn'
+
+#install terraform
+RUN curl -sL "https://releases.hashicorp.com/terraform/0.12.24/terraform_0.12.24_linux_amd64.zip" -o terraform.zip \
+    && unzip terraform.zip -d /usr/bin \
+    && chmod +x /usr/bin
+
+#add aws
+RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
+    && unzip awscliv2.zip \
+    && ./aws/install      \
+    && rm -rf  ./aws
 
 #use openssh 
 RUN  sed -i s/#PermitRootLogin.*/PermitRootLogin\ yes/ /etc/ssh/sshd_config  \
