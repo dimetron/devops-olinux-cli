@@ -7,7 +7,8 @@ ssh-keygen -A
 if [ $# -eq 0 ]
   then
     echo "Running SSH server"
-    exec /usr/sbin/sshd -D -e "$@"
+    #exec /usr/sbin/sshd -D -e "$@"
+    exec /usr/bin/zsh "$@"
   else
     exec "$@"
 fi

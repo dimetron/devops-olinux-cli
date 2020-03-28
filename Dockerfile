@@ -26,7 +26,8 @@ RUN echo "Installing dependencies" \
 RUN echo "Installing additional software" \ 
     && yum -y --nobest install docker-ce vim-minimal which wget zip unzip jq tar passwd \
                 openssh openssh-server squid bash sshpass hostname curl ca-certificates \
-                libstdc++ ca-certificates bash git zip unzip python36 openssl bash zsh procps rsync mc openssh \
+                libstdc++ ca-certificates bash git zip unzip python36 openssl bash zsh procps \
+                rsync mc openssh skopeo podman buildah \
     && yum -y clean all \
     && rm -rf /var/lib/{cache,log} /var/log/lastlog \
     && mkdir /var/log/lastlog
@@ -89,6 +90,6 @@ RUN passwd -d root && \
     which sshd    && \
     ssh-keygen -A
 
-EXPOSE 22
 COPY rootfs /
 ENTRYPOINT ["/entrypoint.sh"]
+WORKDIR /root
